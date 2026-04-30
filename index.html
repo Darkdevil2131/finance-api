@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finance AI Agent</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
+
+        input {
+            width: 400px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #22c55e;
+            color: black;
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 30px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            margin: 10px auto;
+            border-radius: 10px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>💰 Finance AI Agent</h1>
+
+    <input id="query" placeholder="e.g. revenue 1000 profit 250">
+    <button onclick="analyze()">Analyze</button>
+
+    <div id="result"></div>
+
+    <script>
+        async function analyze() {
+            const query = document.getElementById("query").value;
+
+            const res = await fetch("http://127.0.0.1:8000/analyze", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ query })
+            });
+
+            const data = await res.json();
+            const resultDiv = document.getElementById("result");
+
+            resultDiv.innerHTML = "";
+
+            if (data.results) {
+                data.results.forEach(r => {
+                    resultDiv.innerHTML += `
+                        <div class="card">
+                            <b>${r.metric}</b><br>
+                            Value: ${r.value}%<br>
+                            Formula: ${r.formula}
+                        </div>
+                    `;
+                });
+            } else {
+                resultDiv.innerHTML = "<p>❌ Could not understand input</p>";
+            }
+        }
+    </script>
+
+</body>
+</html>
