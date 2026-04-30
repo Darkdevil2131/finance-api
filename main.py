@@ -1,78 +1,66 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
 import re
 
 app = FastAPI()
 
-# ✅ CORS (important for frontend)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# -------------------------
-# Request schema
-# -------------------------
+# -----------------------------
+# Request Schema
+# -----------------------------
 class QueryRequest(BaseModel):
     query: str
 
 
-# -------------------------
-# Smart extraction
-# -------------------------
-def extract_value(text, keyword):
-    pattern = rf"{keyword}\s*(\d+)"
-    match = re.search(pattern, text)
-    return float(match.group(1)) if match else None
-
-
-# -------------------------
-# Core logic
-# -------------------------
-def smart_finance_agent(query):
+# -----------------------------
+# Smart Finance Agent
+# -----------------------------
+def smart_finance_agent(query: str):
     text = query.lower()
+
+    # extract numbers
+    numbers = list(map(float, re.findall(r'\d+', text)))
 
     results = []
 
+    # -----------------------------
     # PROFIT MARGIN
-    revenue = extract_value(text, "revenue")
-    profit = extract_value(text, "profit")
+    # -----------------------------
+    if "revenue" in text and "profit" in text and len(numbers) >= 2:
+        revenue, profit = numbers[0], numbers[1]
+        if revenue != 0:
+            margin = (profit / revenue) * 100
+            results.append({
+                "metric": "profit_margin",
+                "value": round(margin, 2),
+                "formula": "Profit / Revenue"
+            })
 
-    if revenue and profit:
-        margin = (profit / revenue) * 100
-        results.append({
-            "metric": "profit_margin",
-            "value": round(margin, 2),
-            "formula": "Profit / Revenue"
-        })
-
+    # -----------------------------
     # ROI
-    investment = extract_value(text, "investment")
-    gain = extract_value(text, "gain") or extract_value(text, "return")
+    # -----------------------------
+    if "investment" in text and ("gain" in text or "return" in text) and len(numbers) >= 2:
+        investment, gain = numbers[0], numbers[1]
+        if investment != 0:
+            roi = (gain / investment) * 100
+            results.append({
+                "metric": "roi",
+                "value": round(roi, 2),
+                "formula": "Gain / Investment"
+            })
 
-    if investment and gain:
-        roi = (gain / investment) * 100
-        results.append({
-            "metric": "roi",
-            "value": round(roi, 2),
-            "formula": "Gain / Investment"
-        })
-
+    # -----------------------------
     # GROWTH
-    old = extract_value(text, "old")
-    new = extract_value(text, "new")
-
-    if old and new:
-        growth = ((new - old) / old) * 100
-        results.append({
-            "metric": "growth",
-            "value": round(growth, 2),
-            "formula": "(New - Old) / Old"
-        })
+    # -----------------------------
+    if "old" in text and "new" in text and len(numbers) >= 2:
+        old, new = numbers[0], numbers[1]
+        if old != 0:
+            growth = ((new - old) / old) * 100
+            results.append({
+                "metric": "growth",
+                "value": round(growth, 2),
+                "formula": "(New - Old) / Old"
+            })
 
     if results:
         return {"results": results}
@@ -80,9 +68,17 @@ def smart_finance_agent(query):
     return {"error": "Could not understand input"}
 
 
-# -------------------------
-# API endpoint
-# -------------------------
+# -----------------------------
+# Routes
+# -----------------------------
+
+# Root route (IMPORTANT for Render)
+@app.get("/")
+def home():
+    return {"message": "Finance AI API is live 🚀"}
+
+
+# Analyze route
 @app.post("/analyze")
 def analyze(request: QueryRequest):
     return smart_finance_agent(request.query)
