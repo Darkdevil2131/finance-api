@@ -1,9 +1,20 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import re
 
 app = FastAPI()
 
+# -----------------------------
+# CORS (VERY IMPORTANT for frontend)
+# -----------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all (safe for now)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------
 # Request Schema
@@ -72,13 +83,13 @@ def smart_finance_agent(query: str):
 # Routes
 # -----------------------------
 
-# Root route (IMPORTANT for Render)
+# Root route (for Render)
 @app.get("/")
 def home():
     return {"message": "Finance AI API is live 🚀"}
 
 
-# Analyze route
+# Main API
 @app.post("/analyze")
 def analyze(request: QueryRequest):
     return smart_finance_agent(request.query)
